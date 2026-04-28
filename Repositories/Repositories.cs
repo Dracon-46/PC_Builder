@@ -36,8 +36,14 @@ public class ProductRepository : IProductRepository
     private readonly AppDbContext _db;
     public ProductRepository(AppDbContext db) => _db = db;
 
-    public async Task<IEnumerable<Product>> GetByTypeAsync(ComponentType type) =>
-        await _db.Products.Where(p => p.Type == type && p.IsAvailable).OrderBy(p => p.Price).ToListAsync();
+    public async Task<IEnumerable<Product>> GetByTypeAsync(ComponentType type)
+    {
+        // OrderBy(Price) feito no cliente pois SQLite não suporta ORDER BY em decimal
+        var list = await _db.Products
+            .Where(p => p.Type == type && p.IsAvailable)
+            .ToListAsync();
+        return list.OrderBy(p => p.Price);
+    }
 
     public async Task<Product?> GetByIdAsync(int id) =>
         await _db.Products.FindAsync(id);

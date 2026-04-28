@@ -29,16 +29,29 @@ builder.Services.AddScoped<IOrderService,          OrderService>();
 
 var app = builder.Build();
 
-// Auto-migrate and seed on startup
+// Cria o schema e popula o banco automaticamente no primeiro run
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    // EnsureCreated cria as tabelas diretamente do modelo (sem necessidade de migrations)
+    db.Database.EnsureCreated();
+    // Popula com dados iniciais se o banco estiver vazio
+    DbSeeder.Seed(db);
 }
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "text/html; charset=utf-8";
+            await context.Response.WriteAsync(
+                "<h1 style='font-family:sans-serif'>Erro interno do servidor.</h1>" +
+                "<a href='/'>← Voltar ao início</a>");
+        });
+    });
     app.UseHsts();
 }
 
