@@ -2565,23 +2565,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\0031432512004\\.nuget\\packages\\": {},
+    "C:\\Users\\0031432512014\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\PC_Builder\\PCBuilder.csproj",
+      "projectUniqueName": "C:\\Users\\0031432512014\\Desktop\\PC_Builder\\PCBuilder.csproj",
       "projectName": "PCBuilder",
-      "projectPath": "C:\\PC_Builder\\PCBuilder.csproj",
-      "packagesPath": "C:\\Users\\0031432512004\\.nuget\\packages\\",
-      "outputPath": "C:\\PC_Builder\\obj\\",
+      "projectPath": "C:\\Users\\0031432512014\\Desktop\\PC_Builder\\PCBuilder.csproj",
+      "packagesPath": "C:\\Users\\0031432512014\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\0031432512014\\Desktop\\PC_Builder\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\0031432512004\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\0031432512014\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
