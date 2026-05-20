@@ -1,0 +1,140 @@
+@model OrderSummaryViewModel
+@{
+    ViewData["Title"] = "Resumo do Pedido";
+    var b = Model.Build!;
+}
+
+<div class="page-hero page-hero-sm">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/">Início</a> <span>/</span>
+            <a href="/Catalog">Catálogo</a> <span>/</span>
+            Resumo do pedido
+        </div>
+        <h1 class="page-title">Resumo da <span class="accent">Build</span></h1>
+    </div>
+</div>
+
+<div class="container summary-page">
+
+    @if (Model.CompatibilityErrors.Any(e => e.Severity == "error"))
+    {
+        <div class="alert-banner alert-error">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v5M10 13v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <div>
+                <strong>Build com problemas de compatibilidade</strong>
+                @foreach (var err in Model.CompatibilityErrors.Where(e => e.Severity == "error"))
+                {
+                    <div>@err.Component: @err.Message</div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (Model.CompatibilityErrors.Any(e => e.Severity == "warning"))
+    {
+        <div class="alert-banner alert-warning">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3L18 17H2L10 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v4M10 14v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <div>
+                <strong>Avisos</strong>
+                @foreach (var err in Model.CompatibilityErrors.Where(e => e.Severity == "warning"))
+                {
+                    <div>@err.Component: @err.Message</div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="summary-grid">
+        <div class="summary-main">
+            <div class="summary-card">
+                <div class="summary-card-header">
+                    <h2>@b.Name</h2>
+                    <span class="build-cat-tag">@b.CategoryLabel</span>
+                </div>
+                <p class="summary-desc">@b.Description</p>
+
+                <div class="summary-components">
+                    @{
+                        var items = new[]
+                        {
+                            ("Processador (CPU)", b.CPU),
+                            ("Placa de Vídeo (GPU)", b.GPU),
+                            ("Memória RAM", b.RAM),
+                            ("Armazenamento", b.Storage),
+                            ("Placa-mãe", b.Motherboard),
+                            ("Fonte de Alimentação", b.PowerSupply),
+                            ("Cooler", b.Cooler)
+                        };
+                    }
+                    @foreach (var (label, product) in items)
+                    {
+                        if (product != null)
+                        {
+                            <div class="summary-comp-row">
+                                <div class="summary-comp-info">
+                                    <span class="summary-comp-type">@label</span>
+                                    <span class="summary-comp-name">@product.Brand @product.Name</span>
+                                    <span class="summary-comp-desc">@product.Description</span>
+                                </div>
+                                <div class="summary-comp-price">R$ @product.Price.ToString("N2")</div>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <div class="summary-totals">
+                    <div class="total-row">
+                        <span>Consumo total</span>
+                        <span>⚡ @b.TotalPower W</span>
+                    </div>
+                    <div class="total-row total-price-row">
+                        <span>Total</span>
+                        <span class="big-price">R$ @b.TotalPrice.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-actions-col">
+            <div class="action-card sticky-card">
+                <h3>Próximo passo</h3>
+                <p>Confirme a build e preencha seus dados para finalizar o pedido.</p>
+
+                @if (Model.IsValid)
+                {
+                    <a href="/Order/Checkout?buildId=@Model.BuildId&sessionId=@Model.SessionId"
+                       class="btn btn-primary btn-block">
+                        Confirmar e Finalizar Pedido →
+                    </a>
+                }
+                else
+                {
+                    <div class="disabled-hint">Corrija os erros de compatibilidade antes de continuar.</div>
+                    <button class="btn btn-primary btn-block btn-disabled" disabled>
+                        Confirmar e Finalizar Pedido →
+                    </button>
+                }
+
+                @if (Model.Build?.Id != null)
+                {
+                    <a href="/Build/Customize?sourceBuildId=@Model.BuildId"
+                       class="btn btn-outline btn-block mt-8">Editar build</a>
+                }
+                else
+                {
+                    <a href="/Build/Customize?sessionId=@Model.SessionId"
+                       class="btn btn-outline btn-block mt-8">Editar build</a>
+                }
+
+                <a href="/Catalog" class="btn btn-ghost btn-block mt-8">← Voltar ao catálogo</a>
+
+                <div class="action-features mt-16">
+                    <div class="feat"><span class="feat-icon">✓</span> Revisão completa dos componentes</div>
+                    <div class="feat"><span class="feat-icon">✓</span> Confirmação antes de finalizar</div>
+                    <div class="feat"><span class="feat-icon">✓</span> Nenhuma cobrança sem sua confirmação</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
