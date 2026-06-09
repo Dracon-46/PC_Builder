@@ -1,0 +1,178 @@
+@model BuildDetailViewModel
+@{
+    ViewData["Title"] = Model.Build.Name;
+    var b = Model.Build;
+    var currencies = ViewBag.SupportedCurrencies as IEnumerable<string> ?? new[] { "BRL" };
+    var currentCurrency = Model.CurrencyCode;
+}
+
+<div class="page-hero page-hero-sm">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/">Início</a> <span>/</span>
+            <a href="/Catalog">Catálogo</a> <span>/</span>
+            @b.CategoryLabel <span>/</span> @b.Name
+        </div>
+        <div class="detail-title-row">
+            <div>
+                <span class="build-cat-tag">@b.CategoryLabel</span>
+                <h1 class="page-title">@b.Name</h1>
+                <p class="page-sub">@b.Description</p>
+            </div>
+            <div class="detail-price-block">
+                <div class="big-price">R$ @b.TotalPrice.ToString("N2")</div>
+                @if (!string.IsNullOrEmpty(Model.ConvertedPrice))
+                {
+                    <div class="converted-price">≈ @Model.ConvertedPrice</div>
+                }
+                <div class="power-badge">⚡ @b.TotalPower W consumo estimado</div>
+
+                <!-- Currency Adapter selector -->
+                <div class="currency-selector">
+                    <span class="currency-label">Ver preço em:</span>
+                    <div class="currency-btns">
+                        @foreach (var cur in currencies)
+                        {
+                            <a href="/Catalog/BuildDetail/@b.Id?currency=@cur"
+                               class="currency-btn @(currentCurrency == cur ? "active" : "")">@cur</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container detail-page">
+    <div class="detail-grid">
+        <div class="detail-specs-panel">
+            <h2 class="panel-title">Especificações completas</h2>
+
+            <!-- Padrão Adapter: componentes enriquecidos com dados do fornecedor externo -->
+            @if (Model.EnrichedComponents.Any())
+            {
+                <div class="adapter-notice">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M7 4v4M7 9.5v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                    Dados enriquecidos via <strong>ExternalSupplierAdapter</strong> (padrão Adapter)
+                </div>
+            }
+
+            <div class="full-specs">
+                @foreach (var comp in Model.EnrichedComponents)
+                {
+                    <div class="full-spec-row">
+                        <div class="spec-type-label">@comp.Type</div>
+                        <div class="spec-details">
+                            <div class="spec-name">@comp.Brand @comp.Name</div>
+                            <div class="spec-desc">@comp.Description</div>
+                            <div class="spec-meta">
+                                @if (comp.PowerConsumption > 0)
+                                {
+                                    <span class="meta-chip">⚡ @comp.PowerConsumption W</span>
+                                }
+                                @if (!string.IsNullOrEmpty(comp.Socket))
+                                {
+                                    <span class="meta-chip">🔌 @comp.Socket</span>
+                                }
+                                @if (comp.WattageCapacity.HasValue)
+                                {
+                                    <span class="meta-chip">🔋 @comp.WattageCapacity W</span>
+                                }
+                                <!-- Dados do fornecedor externo (via Adapter) -->
+                                <span class="meta-chip meta-sku" title="SKU do fornecedor">📦 @comp.SupplierSku</span>
+                                <span class="meta-chip">🛡️ @comp.WarrantyMonths meses garantia</span>
+                                <span class="meta-chip availability-@comp.AvailabilityCode.ToLower().Replace("_","-")">
+                                    @(comp.AvailabilityCode == "IN_STOCK" ? "✓" :
+                                      comp.AvailabilityCode == "LOW_STOCK" ? "⚠" : "✕")
+                                    @comp.AvailabilityStatus
+                                </span>
+                            </div>
+                        </div>
+                        <div class="spec-price">
+                            <div>R$ @comp.Price.ToString("N2")</div>
+                            @if (Model.ComponentPricesUsd.TryGetValue(comp.Id, out var compUsd))
+                            {
+                                <div style="font-size:.75rem;color:var(--text-muted)">@compUsd</div>
+                            }
+                            @if (Model.ComponentPricesEur.TryGetValue(comp.Id, out var compEur))
+                            {
+                                <div style="font-size:.75rem;color:var(--text-muted)">@compEur</div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!Model.EnrichedComponents.Any())
+                {
+                    <!-- fallback se não houver componentes enriquecidos -->
+                    @foreach (var (label, product) in new[]
+                    {
+                        ("CPU", b.CPU), ("GPU", b.GPU), ("RAM", b.RAM),
+                        ("Storage", b.Storage), ("Motherboard", b.Motherboard),
+                        ("Fonte", b.PowerSupply), ("Cooler", b.Cooler)
+                    })
+                    {
+                        if (product != null)
+                        {
+                            <div class="full-spec-row">
+                                <div class="spec-type-label">@label</div>
+                                <div class="spec-details">
+                                    <div class="spec-name">@product.Brand @product.Name</div>
+                                    <div class="spec-desc">@product.Description</div>
+                                </div>
+                                <div class="spec-price">R$ @product.Price.ToString("N2")</div>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+
+            <div class="power-summary">
+                <div class="power-bar-label">
+                    <span>Consumo total</span><strong>@b.TotalPower W</strong>
+                </div>
+                <div class="power-bar">
+                    <div class="power-fill" style="width: @Math.Min(100,(int)(b.TotalPower/10.0))%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-action-panel">
+            <div class="action-card sticky-card">
+                <div class="action-price">
+                    <span class="action-label">Valor total (BRL)</span>
+                    <span class="action-value">R$ @b.TotalPrice.ToString("N2")</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.ConvertedPrice))
+                {
+                    <div class="action-converted">
+                        <span class="action-label">Em @Model.CurrencyCode</span>
+                        <span class="action-converted-val">@Model.ConvertedPrice</span>
+                    </div>
+                }
+                <div class="action-divider"></div>
+                <p class="action-hint">Deseja usar esta build como base?</p>
+
+                <form asp-controller="Build" asp-action="CloneAndReview" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="buildId" value="@b.Id" />
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Comprar esta build →
+                    </button>
+                </form>
+
+                <a href="/Build/Customize?sourceBuildId=@b.Id" class="btn btn-outline btn-block mt-8">
+                    Personalizar esta build
+                </a>
+                <a href="/Catalog" class="btn btn-ghost btn-block mt-8">← Voltar ao catálogo</a>
+
+                <div class="action-features">
+                    <div class="feat"><span class="feat-icon">✓</span> Preços em múltiplas moedas</div>
+                    <div class="feat"><span class="feat-icon">✓</span> Dados de garantia do fornecedor</div>
+                    <div class="feat"><span class="feat-icon">✓</span> Validação de compatibilidade</div>
+                    <div class="feat"><span class="feat-icon">✓</span> Notificação automática ao confirmar</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

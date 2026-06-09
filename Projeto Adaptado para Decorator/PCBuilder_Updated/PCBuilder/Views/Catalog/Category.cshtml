@@ -1,0 +1,30 @@
+@model IEnumerable<BuildViewModel>
+@{
+    ViewData["Title"] = ViewBag.CategoryName;
+    var builds = Model.ToList();
+}
+
+<div class="page-hero page-hero-sm">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/">Início</a> <span>/</span>
+            <a href="/Catalog">Catálogo</a> <span>/</span>
+            @ViewBag.CategoryName
+        </div>
+        <h1 class="page-title"><span class="accent">@ViewBag.CategoryName</span></h1>
+        <p class="page-sub">@builds.Count build(s) disponível(eis) nesta categoria.</p>
+    </div>
+</div>
+
+<div class="container catalog-page">
+    <div class="builds-grid">
+        @foreach (var build in builds)
+        {
+            <partial name="_BuildCard" model="build" />
+        }
+    </div>
+    <div class="page-nav-row">
+        <a href="/Catalog" class="btn btn-ghost">← Voltar ao catálogo</a>
+        <a href="/Build/Customize" class="btn btn-primary">Montar PC Personalizado</a>
+    </div>
+</div>

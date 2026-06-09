@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " — " : "")PCBuilder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="noise-overlay"></div>
+
+    <header class="site-header">
+        <nav class="nav-container">
+            <a href="/" class="nav-logo">
+                <span class="logo-bracket">[</span>
+                <span class="logo-text">PC</span><span class="logo-accent">Builder</span>
+                <span class="logo-bracket">]</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/" class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">Início</a></li>
+                <li><a href="/Catalog" class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Catalog" ? "active" : "")">Catálogo</a></li>
+                <li><a href="/Build/Customize" class="nav-link nav-cta">Montar PC</a></li>
+            </ul>
+            <button class="theme-toggle" id="themeToggle" title="Alternar tema">
+                <span class="theme-icon">◐</span>
+            </button>
+            <button class="nav-burger" id="navBurger">
+                <span></span><span></span><span></span>
+            </button>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="logo-bracket">[</span>
+                <span class="logo-text">PC</span><span class="logo-accent">Builder</span>
+                <span class="logo-bracket">]</span>
+                <p>Monte o PC dos seus sonhos.</p>
+            </div>
+            <div class="footer-links">
+                <a href="/Catalog">Catálogo</a>
+                <a href="/Build/Customize">Personalizar</a>
+            </div>
+            <p class="footer-copy">© 2024 PCBuilder — Projeto de portfólio</p>
+        </div>
+    </footer>
+
+    <!-- Toast container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
