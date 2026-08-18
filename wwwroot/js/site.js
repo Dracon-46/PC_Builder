@@ -113,3 +113,14 @@ window.showToast = function (message, type = 'success', duration = 4000) {
         });
     });
 })();
+
+// ── Currency selection on customize page ──────────────────────────────────────
+(function () {
+    const currencySelect = document.getElementById('currencySelect');
+    if (!currencySelect) return;
+    currencySelect.addEventListener('change', function () {
+        // Re-triggers live price fetch with new currency
+        const event = new Event('change');
+        document.querySelectorAll('.comp-radio:checked').forEach(r => r.dispatchEvent(event));
+    });
+})();

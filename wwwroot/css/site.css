@@ -1454,3 +1454,98 @@ input, textarea { font-family: inherit; }
   .detail-title-row { flex-direction: column; }
   .detail-price-block { text-align: left; }
 }
+
+/* ── Adapter & Facade additions ──────────────────────────────────────────── */
+
+/* Currency selector */
+.currency-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.currency-label {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+}
+.currency-btns { display: flex; gap: 5px; }
+.currency-btn {
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+  background: var(--bg-3);
+  transition: all var(--trans);
+  cursor: pointer;
+}
+.currency-btn:hover { border-color: var(--accent); color: var(--accent); }
+.currency-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+/* Converted price display */
+.converted-price {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+.action-converted {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+.action-converted-val {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+/* Adapter notice badge */
+.adapter-notice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.75rem;
+  color: var(--text-3);
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  margin-bottom: 16px;
+}
+.adapter-notice strong { color: var(--accent); }
+
+/* Availability chips */
+.availability-in-stock  { color: var(--accent) !important; border-color: rgba(0,229,160,0.3) !important; background: var(--accent-dim) !important; }
+.availability-low-stock { color: var(--warn)  !important; border-color: rgba(245,166,35,0.3)  !important; background: var(--warn-dim)  !important; }
+.availability-out-of-stock { color: var(--error) !important; border-color: rgba(255,77,109,0.3) !important; background: var(--error-dim) !important; }
+
+.meta-sku { font-family: var(--font-mono); letter-spacing: 0.03em; }
+
+/* Pattern diagram page (diagrama explicativo) */
+.pattern-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pattern-facade   { background: rgba(0,196,255,0.12); color: #00c4ff; border: 1px solid rgba(0,196,255,0.25); }
+.pattern-adapter  { background: rgba(200,150,255,0.12); color: #c896ff; border: 1px solid rgba(200,150,255,0.25); }

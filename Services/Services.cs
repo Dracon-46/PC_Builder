@@ -51,6 +51,13 @@ public interface ICompatibilityService
 
 public class CompatibilityService : ICompatibilityService
 {
+    private readonly IEnumerable<PCBuilder.Patterns.Strategy.ICompatibilityRule> _rules;
+
+    public CompatibilityService(IEnumerable<PCBuilder.Patterns.Strategy.ICompatibilityRule> rules)
+    {
+        _rules = rules;
+    }
+
     public List<CompatibilityError> Validate(
         Product? cpu, Product? gpu, Product? ram,
         Product? storage, Product? motherboard,
@@ -58,57 +65,12 @@ public class CompatibilityService : ICompatibilityService
     {
         var errors = new List<CompatibilityError>();
 
-        // CPU ↔ Motherboard socket
-        if (cpu != null && motherboard != null)
+        foreach (var rule in _rules)
         {
-            if (!string.IsNullOrEmpty(cpu.Socket) &&
-                !string.IsNullOrEmpty(motherboard.Socket) &&
-                !cpu.Socket.Equals(motherboard.Socket, StringComparison.OrdinalIgnoreCase))
+            var error = rule.Check(cpu, gpu, ram, storage, motherboard, psu, cooler);
+            if (error != null)
             {
-                errors.Add(new CompatibilityError
-                {
-                    Component = "CPU / Placa-mãe",
-                    Message = $"Socket incompatível: CPU usa {cpu.Socket}, placa-mãe suporta {motherboard.Socket}.",
-                    Severity = "error"
-                });
-            }
-        }
-
-        // PSU wattage check
-        if (psu != null)
-        {
-            int totalPower = 0;
-            if (cpu != null) totalPower += cpu.PowerConsumption;
-            if (gpu != null) totalPower += gpu.PowerConsumption;
-            if (ram != null) totalPower += ram.PowerConsumption;
-            if (storage != null) totalPower += storage.PowerConsumption;
-            if (motherboard != null) totalPower += motherboard.PowerConsumption;
-            if (cooler != null) totalPower += cooler.PowerConsumption;
-
-            int recommended = (int)(totalPower * 1.20); // 20% headroom
-
-            if (psu.WattageCapacity.HasValue && psu.WattageCapacity.Value < recommended)
-            {
-                errors.Add(new CompatibilityError
-                {
-                    Component = "Fonte",
-                    Message = $"Fonte de {psu.WattageCapacity}W pode ser insuficiente. Consumo estimado: {totalPower}W (recomendado {recommended}W com margem de segurança).",
-                    Severity = psu.WattageCapacity.Value < totalPower ? "error" : "warning"
-                });
-            }
-        }
-
-        // Cooler TDP check
-        if (cooler != null && cpu != null)
-        {
-            if (cooler.TDP.HasValue && cpu.TDP.HasValue && cooler.TDP.Value < cpu.TDP.Value)
-            {
-                errors.Add(new CompatibilityError
-                {
-                    Component = "Cooler",
-                    Message = $"Cooler suporta até {cooler.TDP}W TDP, mas o CPU tem {cpu.TDP}W TDP. Risco de throttling térmico.",
-                    Severity = "warning"
-                });
+                errors.Add(error);
             }
         }
 
@@ -119,13 +81,24 @@ public class CompatibilityService : ICompatibilityService
 // ─── PricingService ──────────────────────────────────────────────────────────
 public interface IPricingService
 {
-    decimal Calculate(IEnumerable<Product?> products);
+    PCBuilder.Patterns.Decorator.PriceBreakdown Calculate(IEnumerable<Product?> products, BuildCategory? category = null, string? couponCode = null);
 }
 
 public class PricingService : IPricingService
 {
-    public decimal Calculate(IEnumerable<Product?> products) =>
-        products.Where(p => p != null).Sum(p => p!.Price);
+    private readonly PCBuilder.Patterns.Decorator.IDiscountService _discountService;
+
+    public PricingService(PCBuilder.Patterns.Decorator.IDiscountService discountService)
+    {
+        _discountService = discountService;
+    }
+
+    public PCBuilder.Patterns.Decorator.PriceBreakdown Calculate(IEnumerable<Product?> products, BuildCategory? category = null, string? couponCode = null)
+    {
+        var validProducts = products.Where(p => p != null).ToList();
+        decimal basePrice = validProducts.Sum(p => p!.Price);
+        return _discountService.ApplyDiscounts(basePrice, category, couponCode, validProducts.Count);
+    }
 }
 
 // ─── BuildService ────────────────────────────────────────────────────────────
@@ -290,8 +263,13 @@ public interface IOrderService
 public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepo;
+    private readonly PCBuilder.Patterns.Observer.IOrderPublisher _publisher;
 
-    public OrderService(IOrderRepository orderRepo) => _orderRepo = orderRepo;
+    public OrderService(IOrderRepository orderRepo, PCBuilder.Patterns.Observer.IOrderPublisher publisher)
+    {
+        _orderRepo = orderRepo;
+        _publisher = publisher;
+    }
 
     public async Task<Order> PlaceOrderAsync(Build build, string customerName, string customerEmail,
         string customerPhone, string shippingAddress)
@@ -313,7 +291,21 @@ public class OrderService : IOrderService
                 Quantity    = bc.Quantity
             }).ToList()
         };
-        return await _orderRepo.CreateAsync(order);
+        
+        var createdOrder = await _orderRepo.CreateAsync(order);
+        
+        var evt = new PCBuilder.Patterns.Observer.OrderPlacedEvent
+        {
+            Order = createdOrder,
+            CustomerName = customerName,
+            CustomerEmail = customerEmail,
+            TotalAmount = createdOrder.TotalAmount,
+            PlacedAt = DateTime.UtcNow
+        };
+        
+        await _publisher.PublishOrderPlacedAsync(evt);
+        
+        return createdOrder;
     }
 
     public async Task<OrderConfirmationViewModel?> GetConfirmationAsync(string orderNumber)

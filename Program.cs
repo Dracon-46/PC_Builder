@@ -1,8 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using PCBuilder.Data;
+using PCBuilder.Patterns.Adapters;
+using PCBuilder.Patterns.Facade;
 using PCBuilder.Repositories;
 using PCBuilder.Services;
-
+using PCBuilder.Patterns.Strategy;
+using PCBuilder.Patterns.Observer;
+using PCBuilder.Patterns.Decorator;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
@@ -16,16 +20,49 @@ builder.Services.AddSession(opts =>
 builder.Services.AddDbContext<AppDbContext>(opts =>
     opts.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=pcbuilder.db"));
 
-// Repositories
+// ── Repositories ──────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IBuildRepository,   BuildRepository>();
 builder.Services.AddScoped<IOrderRepository,   OrderRepository>();
 
-// Services
+// ── STRATEGY PATTERN ──────────────────────────────────────────────────────────
+builder.Services.AddScoped<ICompatibilityRule, SocketCompatibilityRule>();
+builder.Services.AddScoped<ICompatibilityRule, PsuWattageCompatibilityRule>();
+builder.Services.AddScoped<ICompatibilityRule, CoolerTdpCompatibilityRule>();
+
+// ── OBSERVER PATTERN ──────────────────────────────────────────────────────────
+builder.Services.AddScoped<IOrderObserver, NotificationOrderObserver>();
+builder.Services.AddScoped<IOrderObserver, InventoryUpdateObserver>();
+builder.Services.AddScoped<IOrderObserver, LoyaltyPointsObserver>();
+builder.Services.AddScoped<IOrderObserver, OrderAuditLogObserver>();
+builder.Services.AddScoped<IOrderPublisher, OrderPublisher>();
+
+// ── DECORATOR PATTERN ─────────────────────────────────────────────────────────
+builder.Services.AddScoped<IDiscountService, DiscountService>();
+
+// ── Core Services ─────────────────────────────────────────────────────────────
 builder.Services.AddScoped<ICompatibilityService, CompatibilityService>();
 builder.Services.AddScoped<IPricingService,        PricingService>();
 builder.Services.AddScoped<IBuildService,          BuildService>();
 builder.Services.AddScoped<IOrderService,          OrderService>();
+
+// ── ADAPTER PATTERN ───────────────────────────────────────────────────────────
+// CurrencyAdapter
+builder.Services.AddSingleton<ExchangeRateProvider>();
+builder.Services.AddSingleton<ICurrencyAdapterFactory, CurrencyAdapterFactory>();
+
+// ComponentSpecAdapter
+builder.Services.AddScoped<IComponentSpecAdapter, ExternalSupplierAdapter>();
+
+// NotificationAdapters — registra múltiplos canais, dispatcher injeta IEnumerable<>
+builder.Services.AddScoped<SmtpEmailService>();
+builder.Services.AddScoped<FileLogService>();
+builder.Services.AddScoped<INotificationAdapter, EmailNotificationAdapter>();
+builder.Services.AddScoped<INotificationAdapter, LogFileNotificationAdapter>();
+builder.Services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+
+// ── FACADE PATTERN ────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IPCBuilderFacade, PCBuilderFacade>();
 
 var app = builder.Build();
 
@@ -33,9 +70,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    // EnsureCreated cria as tabelas diretamente do modelo (sem necessidade de migrations)
     db.Database.EnsureCreated();
-    // Popula com dados iniciais se o banco estiver vazio
     DbSeeder.Seed(db);
 }
 
@@ -48,8 +83,7 @@ if (!app.Environment.IsDevelopment())
             context.Response.StatusCode = 500;
             context.Response.ContentType = "text/html; charset=utf-8";
             await context.Response.WriteAsync(
-                "<h1 style='font-family:sans-serif'>Erro interno do servidor.</h1>" +
-                "<a href='/'>← Voltar ao início</a>");
+                "<h1 style='font-family:sans-serif'>Erro interno.</h1><a href='/'>← Voltar ao início</a>");
         });
     });
     app.UseHsts();

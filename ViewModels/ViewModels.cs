@@ -133,3 +133,23 @@ public class OrderItemViewModel
     public decimal TotalPrice { get; set; }
     public ComponentType Type { get; set; }
 }
+
+// ── ViewModels adicionados para suporte aos Padrões ──────────────────────────
+
+/// <summary>ViewModel enriquecido com dados do fornecedor externo (via Adapter).</summary>
+public class EnrichedProductViewModel : ProductViewModel
+{
+    public string SupplierSku        { get; set; } = string.Empty;
+    public int    WarrantyMonths     { get; set; }
+    public string AvailabilityStatus { get; set; } = string.Empty;
+    public string AvailabilityCode   { get; set; } = string.Empty;
+}
+
+/// <summary>ViewModel de detalhe de build com preço convertido e componentes enriquecidos (via Facade + Adapters).</summary>
+public class BuildDetailViewModel
+{
+    public BuildViewModel Build              { get; set; } = null!;
+    public string?        ConvertedPrice     { get; set; }
+    public string         CurrencyCode       { get; set; } = "BRL";
+    public List<EnrichedProductViewModel> EnrichedComponents { get; set; } = [];
+}
