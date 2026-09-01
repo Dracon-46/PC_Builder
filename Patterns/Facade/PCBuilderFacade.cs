@@ -58,6 +58,8 @@ public interface IPCBuilderFacade
     Task<OrderConfirmationViewModel?> GetOrderConfirmationAsync(string orderNumber);
     Task<Order?> AdvanceOrderStatusAsync(string orderNumber);
     Task<Order?> CancelOrderAsync(string orderNumber);
+    Task<MyOrdersViewModel> GetMyOrdersAsync(IEnumerable<string> orderNumbers);
+    Task<bool> OrderExistsAsync(string orderNumber);
 
     // ── Componentes enriquecidos (Adapter) ────────────────────────────────────
     Task<IEnumerable<EnrichedProductViewModel>> GetEnrichedProductsAsync(ComponentType type);
@@ -170,10 +172,12 @@ public sealed class PCBuilderFacade : IPCBuilderFacade
         {
             var externalDto = _specAdapter.ToExternalDto(new Models.Product
             {
-                Id = comp!.Id, Name = comp.Name, Brand = comp.Brand,
+                Id = comp!.Id, Name = comp.Name,
+                Brand = new Models.Brand { Name = comp.Brand },
                 Type = comp.Type, Price = comp.Price,
                 PowerConsumption = comp.PowerConsumption,
-                Socket = comp.Socket, TDP = comp.TDP,
+                Socket = comp.Socket == null ? null : new Models.Socket { Name = comp.Socket },
+                TDP = comp.TDP,
                 WattageCapacity = comp.WattageCapacity, IsAvailable = true
             });
             enrichedComponents.Add(_specAdapter.Enrich(comp, externalDto));
@@ -344,6 +348,15 @@ public sealed class PCBuilderFacade : IPCBuilderFacade
 
     public Task<Order?> CancelOrderAsync(string orderNumber) =>
         _orderService.CancelOrderAsync(orderNumber);
+
+    public async Task<MyOrdersViewModel> GetMyOrdersAsync(IEnumerable<string> orderNumbers) =>
+        new MyOrdersViewModel
+        {
+            Orders = await _orderService.GetOrdersByNumbersAsync(orderNumbers)
+        };
+
+    public Task<bool> OrderExistsAsync(string orderNumber) =>
+        _orderService.ExistsAsync(orderNumber);
 
     // ── Componentes enriquecidos ───────────────────────────────────────────────
 

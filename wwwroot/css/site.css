@@ -1386,6 +1386,49 @@ input, textarea { font-family: inherit; }
 .status-cancelled  { color: var(--error);   background: var(--error-dim);   border-color: rgba(255,77,109,0.3); }
 
 .confirm-status-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.order-num-hint { display: block; margin-top: 8px; font-size: 0.75rem; color: var(--text-3); }
+
+/* ── Meus pedidos ─────────────────────────────────────────────────────────── */
+.orders-page { padding: 32px 0 64px; }
+
+.orders-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+
+.order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+  flex-wrap: wrap;
+}
+.order-row:hover { border-color: var(--accent); background: var(--bg-3); transform: translateY(-1px); }
+.order-row:hover .order-row-arrow { transform: translateX(3px); color: var(--accent); }
+
+.order-row-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.order-row-num  { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; }
+.order-row-meta { font-size: 0.78rem; color: var(--text-3); }
+
+.order-row-side  { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.order-row-total { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; white-space: nowrap; }
+.order-row-arrow { color: var(--text-3); transition: transform 0.15s, color 0.15s; }
+
+.track-card {
+  padding: 24px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 32px;
+}
+.track-card h3 { margin: 0 0 6px; font-size: 1rem; }
+.track-hint { margin: 0 0 16px; font-size: 0.82rem; color: var(--text-3); }
+.track-form { display: flex; gap: 10px; flex-wrap: wrap; }
+.track-form .form-input { flex: 1; min-width: 240px; }
 
 .confirm-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 

@@ -1,0 +1,75 @@
+@model MyOrdersViewModel
+@{
+    ViewData["Title"] = "Meus pedidos";
+}
+
+<div class="page-hero page-hero-sm">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/">Início</a> <span>/</span>
+            Meus pedidos
+        </div>
+        <h1 class="page-title">Meus <span class="accent">pedidos</span></h1>
+        <p class="page-sub">
+            @if (Model.Orders.Any())
+            {
+                @($"{Model.Orders.Count} pedido(s) feito(s) neste navegador.")
+            }
+            else
+            {
+                @("Nenhum pedido nesta sessão. Se você tem o número do pedido, consulte abaixo.")
+            }
+        </p>
+    </div>
+</div>
+
+<div class="container orders-page">
+
+    @if (!string.IsNullOrEmpty(Model.NotFoundNumber))
+    {
+        <div class="alert alert-error">
+            Não encontramos nenhum pedido com o número <strong>@Model.NotFoundNumber</strong>.
+            Confira se digitou corretamente.
+        </div>
+    }
+
+    @if (Model.Orders.Any())
+    {
+        <div class="orders-list">
+            @foreach (var order in Model.Orders)
+            {
+                <a href="/Order/Confirmation?orderNumber=@order.OrderNumber" class="order-row">
+                    <div class="order-row-main">
+                        <span class="order-row-num">@order.OrderNumber</span>
+                        <span class="order-row-meta">
+                            @order.CreatedAt.ToString("dd/MM/yyyy HH:mm") · @order.ItemCount item(ns)
+                        </span>
+                    </div>
+                    <div class="order-row-side">
+                        <span class="order-status-badge @order.StatusBadgeClass">@order.StatusLabel</span>
+                        <span class="order-row-total">R$ @order.TotalAmount.ToString("N2")</span>
+                        <span class="order-row-arrow">→</span>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+
+    <div class="track-card">
+        <h3>Consultar por número</h3>
+        <p class="track-hint">
+            Use isto se a sessão expirou ou se você está em outro navegador.
+        </p>
+        <form method="post" asp-action="Track" asp-controller="Order" class="track-form">
+            @Html.AntiForgeryToken()
+            <input type="text" name="orderNumber" class="form-input"
+                   placeholder="PCB-20260901180752721" value="@Model.NotFoundNumber" required />
+            <button type="submit" class="btn btn-primary">Buscar pedido</button>
+        </form>
+    </div>
+
+    <div class="page-nav-row">
+        <a href="/Catalog" class="btn btn-ghost">← Ver catálogo</a>
+        <a href="/Build/Customize" class="btn btn-primary">Montar PC Personalizado</a>
+    </div>
+</div>

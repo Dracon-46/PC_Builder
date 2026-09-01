@@ -22,6 +22,7 @@
             <ul class="nav-links">
                 <li><a href="/" class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">Início</a></li>
                 <li><a href="/Catalog" class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Catalog" ? "active" : "")">Catálogo</a></li>
+                <li><a href="/Order/MyOrders" class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Order" ? "active" : "")">Meus pedidos</a></li>
                 <li><a href="/Build/Customize" class="nav-link nav-cta">Montar PC</a></li>
             </ul>
             <button class="theme-toggle" id="themeToggle" title="Alternar tema">

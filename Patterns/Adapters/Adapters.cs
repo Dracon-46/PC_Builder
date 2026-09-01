@@ -154,23 +154,25 @@ public sealed class ExternalSupplierAdapter : IComponentSpecAdapter
     public ExternalSupplierComponentDto ToExternalDto(Product product) => new()
     {
         SupplierSku      = $"PCB-{product.Id:D6}",
-        FullTitle        = $"{product.Brand} {product.Name}",
-        Manufacturer     = product.Brand,
+        FullTitle        = $"{product.Brand?.Name} {product.Name}".Trim(),
+        Manufacturer     = product.Brand?.Name ?? string.Empty,
         PriceUsd         = (double)(product.Price * 0.19m),
         TdpWatts         = product.TDP ?? product.PowerConsumption,
-        SocketType       = product.Socket ?? "N/A",
+        SocketType       = product.EffectiveSocket?.Name ?? "N/A",
         WarrantyMonths   = 24, // padrão de mercado
         AvailabilityCode = product.IsAvailable ? "IN_STOCK" : "OUT_OF_STOCK",
         CategoryCode     = _reverseCategoryMap.TryGetValue(product.Type, out var c) ? c : "UNKNOWN",
     };
 
+    // Marca e soquete vêm como texto do fornecedor; aqui viram as entidades
+    // correspondentes (desanexadas — quem persistir resolve o Id no banco).
     public Product FromExternalDto(ExternalSupplierComponentDto dto) => new()
     {
         Name             = dto.FullTitle.Replace(dto.Manufacturer, "").Trim(),
-        Brand            = dto.Manufacturer,
+        Brand            = new Brand { Name = dto.Manufacturer },
         Price            = (decimal)(dto.PriceUsd / 0.19),
         PowerConsumption = dto.TdpWatts,
-        Socket           = dto.SocketType == "N/A" ? null : dto.SocketType,
+        Socket           = dto.SocketType == "N/A" ? null : new Socket { Name = dto.SocketType },
         IsAvailable      = dto.AvailabilityCode == "IN_STOCK",
         Type             = _categoryMap.TryGetValue(dto.CategoryCode, out var t) ? t : ComponentType.CPU,
         Description      = $"Importado via fornecedor externo. Garantia: {dto.WarrantyMonths} meses.",

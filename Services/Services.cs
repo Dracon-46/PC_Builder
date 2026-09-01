@@ -7,11 +7,13 @@ namespace PCBuilder.Services;
 // ─── Mapping helpers ────────────────────────────────────────────────────────
 public static class Mapper
 {
+    // Achata as tabelas normalizadas (Brand / Socket / Chipset) em texto para a view.
+    // Placa-mãe não guarda soquete: ele vem do chipset via EffectiveSocket.
     public static ProductViewModel ToViewModel(Product p) => new()
     {
-        Id = p.Id, Name = p.Name, Brand = p.Brand, Description = p.Description,
+        Id = p.Id, Name = p.Name, Brand = p.Brand?.Name ?? string.Empty, Description = p.Description,
         Price = p.Price, Type = p.Type, PowerConsumption = p.PowerConsumption,
-        Socket = p.Socket, ChipsetCompatibility = p.ChipsetCompatibility,
+        Socket = p.EffectiveSocket?.Name, Chipset = p.Chipset?.Name,
         TDP = p.TDP, WattageCapacity = p.WattageCapacity
     };
 
@@ -260,6 +262,8 @@ public interface IOrderService
     Task<OrderConfirmationViewModel?> GetConfirmationAsync(string orderNumber);
     Task<Order?> AdvanceOrderStatusAsync(string orderNumber);
     Task<Order?> CancelOrderAsync(string orderNumber);
+    Task<List<MyOrderListItemViewModel>> GetOrdersByNumbersAsync(IEnumerable<string> orderNumbers);
+    Task<bool> ExistsAsync(string orderNumber);
 }
 
 public class OrderService : IOrderService
@@ -343,6 +347,31 @@ public class OrderService : IOrderService
             CanCancel        = state.CanCancel
         };
     }
+
+    // ── Listagem "Meus pedidos" ──────────────────────────────────────────────
+
+    public async Task<List<MyOrderListItemViewModel>> GetOrdersByNumbersAsync(IEnumerable<string> orderNumbers)
+    {
+        var orders = await _orderRepo.GetByOrderNumbersAsync(orderNumbers);
+
+        return orders.Select(o =>
+        {
+            var state = PCBuilder.Patterns.State.OrderStateFactory.FromKey(o.Status);
+            return new MyOrderListItemViewModel
+            {
+                OrderNumber      = o.OrderNumber,
+                CustomerName     = o.CustomerName,
+                TotalAmount      = o.TotalAmount,
+                CreatedAt        = o.CreatedAt,
+                ItemCount        = o.Items.Count,
+                StatusLabel      = state.Label,
+                StatusBadgeClass = state.BadgeCssClass
+            };
+        }).ToList();
+    }
+
+    public async Task<bool> ExistsAsync(string orderNumber) =>
+        await _orderRepo.GetByOrderNumberAsync(orderNumber) != null;
 
     // ── Transições de status (State pattern) ─────────────────────────────────
 

@@ -45,6 +45,10 @@ public class CatalogController : Controller
         return View(vm);
     }
 
+    // A rota convencional ({controller}/{action}/{id?}) nomeia o 3º segmento como
+    // "id", então /Catalog/Category/gamer-base não preenchia "slug" e caía em 404.
+    // Esta rota explícita aceita o slug no caminho (e ainda na query string).
+    [HttpGet("Catalog/Category/{slug?}")]
     public async Task<IActionResult> Category(string slug)
     {
         var category = slug switch
@@ -191,8 +195,31 @@ public class BuildController : Controller
 // ─── OrderController ─────────────────────────────────────────────────────────
 public class OrderController : Controller
 {
+    private const string MyOrdersKey = "MyOrders";
+
     private readonly IPCBuilderFacade _facade;
     public OrderController(IPCBuilderFacade facade) => _facade = facade;
+
+    // ── Pedidos da sessão ─────────────────────────────────────────────────────
+    // Sem login, a sessão é o que liga o visitante aos pedidos dele. Guardamos
+    // apenas os números, para a página "Meus pedidos" conseguir listá-los depois.
+
+    private List<string> GetSessionOrderNumbers()
+    {
+        var raw = HttpContext.Session.GetString(MyOrdersKey);
+        return string.IsNullOrEmpty(raw)
+            ? []
+            : raw.Split('|', StringSplitOptions.RemoveEmptyEntries).ToList();
+    }
+
+    private void RememberOrder(string orderNumber)
+    {
+        var numbers = GetSessionOrderNumbers();
+        if (numbers.Contains(orderNumber)) return;
+
+        numbers.Add(orderNumber);
+        HttpContext.Session.SetString(MyOrdersKey, string.Join('|', numbers));
+    }
 
     public async Task<IActionResult> Summary(int? buildId, string? sessionId)
     {
@@ -247,7 +274,31 @@ public class OrderController : Controller
         });
 
         HttpContext.Session.Remove("BuildSession");
+        RememberOrder(order.OrderNumber);   // para o cliente conseguir voltar ao pedido
         return RedirectToAction("Confirmation", new { orderNumber = order.OrderNumber });
+    }
+
+    // Lista os pedidos feitos nesta sessão + busca por número.
+    public async Task<IActionResult> MyOrders(string? notFound)
+    {
+        var vm = await _facade.GetMyOrdersAsync(GetSessionOrderNumbers());
+        vm.NotFoundNumber = notFound;
+        return View(vm);
+    }
+
+    // Consulta por número: serve para voltar a um pedido de outra sessão
+    // (sessão expirada, outro navegador) desde que se tenha o número.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Track(string orderNumber)
+    {
+        orderNumber = (orderNumber ?? string.Empty).Trim();
+
+        if (string.IsNullOrEmpty(orderNumber) || !await _facade.OrderExistsAsync(orderNumber))
+            return RedirectToAction("MyOrders", new { notFound = orderNumber });
+
+        RememberOrder(orderNumber);
+        return RedirectToAction("Confirmation", new { orderNumber });
     }
 
     public async Task<IActionResult> Confirmation(string orderNumber)

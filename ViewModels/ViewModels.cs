@@ -43,8 +43,8 @@ public class ProductViewModel
     public decimal Price { get; set; }
     public ComponentType Type { get; set; }
     public int PowerConsumption { get; set; }
-    public string? Socket { get; set; }
-    public string? ChipsetCompatibility { get; set; }
+    public string? Socket { get; set; }   // direto (CPU) ou herdado do chipset (placa-mãe)
+    public string? Chipset { get; set; }  // só placas-mãe
     public int? TDP { get; set; }
     public int? WattageCapacity { get; set; }
 }
@@ -130,6 +130,28 @@ public class OrderConfirmationViewModel
     public string StatusBadgeClass { get; set; } = string.Empty;
     public string? NextActionLabel { get; set; }
     public bool CanCancel { get; set; }
+}
+
+/// <summary>Uma linha da listagem "Meus pedidos".</summary>
+public class MyOrderListItemViewModel
+{
+    public string OrderNumber { get; set; } = string.Empty;
+    public string CustomerName { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int ItemCount { get; set; }
+
+    // Status resolvido pelo State pattern
+    public string StatusLabel { get; set; } = string.Empty;
+    public string StatusBadgeClass { get; set; } = string.Empty;
+}
+
+public class MyOrdersViewModel
+{
+    public List<MyOrderListItemViewModel> Orders { get; set; } = [];
+
+    /// <summary>Número consultado que não foi encontrado (para exibir o aviso).</summary>
+    public string? NotFoundNumber { get; set; }
 }
 
 public class OrderItemViewModel

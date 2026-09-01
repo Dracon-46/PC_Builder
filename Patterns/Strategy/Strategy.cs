@@ -23,14 +23,18 @@ public class SocketCompatibilityRule : ICompatibilityRule
     {
         if (cpu != null && motherboard != null)
         {
-            if (!string.IsNullOrEmpty(cpu.Socket) &&
-                !string.IsNullOrEmpty(motherboard.Socket) &&
-                !cpu.Socket.Equals(motherboard.Socket, StringComparison.OrdinalIgnoreCase))
+            // Com o banco normalizado, o soquete é uma entidade: a CPU aponta direto
+            // para ele e a placa-mãe herda do chipset. A comparação passa a ser por
+            // chave (Id), não por string — sem risco de divergência de digitação.
+            var cpuSocket = cpu.EffectiveSocket;
+            var mbSocket  = motherboard.EffectiveSocket;
+
+            if (cpuSocket != null && mbSocket != null && cpuSocket.Id != mbSocket.Id)
             {
                 return new CompatibilityError
                 {
                     Component = "CPU / Placa-mãe",
-                    Message = $"Socket incompatível: CPU usa {cpu.Socket}, placa-mãe suporta {motherboard.Socket}.",
+                    Message = $"Socket incompatível: CPU usa {cpuSocket.Name}, placa-mãe suporta {mbSocket.Name}.",
                     Severity = "error"
                 };
             }

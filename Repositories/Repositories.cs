@@ -28,6 +28,7 @@ public interface IOrderRepository
     Task<Order> UpdateAsync(Order order);
     Task<Order?> GetByIdAsync(int id);
     Task<Order?> GetByOrderNumberAsync(string orderNumber);
+    Task<IEnumerable<Order>> GetByOrderNumbersAsync(IEnumerable<string> orderNumbers);
 }
 
 // ─── Implementations ────────────────────────────────────────────────────────
@@ -37,20 +38,28 @@ public class ProductRepository : IProductRepository
     private readonly AppDbContext _db;
     public ProductRepository(AppDbContext db) => _db = db;
 
+    // Marca / soquete / chipset agora vivem em tabelas próprias (3FN),
+    // então todo Product precisa vir com essas navegações carregadas.
+    private IQueryable<Product> WithRelations() =>
+        _db.Products
+            .Include(p => p.Brand)
+            .Include(p => p.Socket)
+            .Include(p => p.Chipset).ThenInclude(c => c!.Socket);
+
     public async Task<IEnumerable<Product>> GetByTypeAsync(ComponentType type)
     {
         // OrderBy(Price) feito no cliente pois SQLite não suporta ORDER BY em decimal
-        var list = await _db.Products
+        var list = await WithRelations()
             .Where(p => p.Type == type && p.IsAvailable)
             .ToListAsync();
         return list.OrderBy(p => p.Price);
     }
 
     public async Task<Product?> GetByIdAsync(int id) =>
-        await _db.Products.FindAsync(id);
+        await WithRelations().FirstOrDefaultAsync(p => p.Id == id);
 
     public async Task<IEnumerable<Product>> GetAllAsync() =>
-        await _db.Products.Where(p => p.IsAvailable).ToListAsync();
+        await WithRelations().Where(p => p.IsAvailable).ToListAsync();
 }
 
 public class BuildRepository : IBuildRepository
@@ -58,26 +67,30 @@ public class BuildRepository : IBuildRepository
     private readonly AppDbContext _db;
     public BuildRepository(AppDbContext db) => _db = db;
 
+    // Cada Product carrega marca, soquete e chipset (tabelas normalizadas)
+    private IQueryable<Build> WithComponents() =>
+        _db.Builds
+            .Include(b => b.Components).ThenInclude(c => c.Product).ThenInclude(p => p.Brand)
+            .Include(b => b.Components).ThenInclude(c => c.Product).ThenInclude(p => p.Socket)
+            .Include(b => b.Components).ThenInclude(c => c.Product).ThenInclude(p => p.Chipset)
+                .ThenInclude(c => c!.Socket);
+
     public async Task<IEnumerable<Build>> GetTemplatesAsync() =>
-        await _db.Builds
-            .Include(b => b.Components).ThenInclude(c => c.Product)
+        await WithComponents()
             .Where(b => b.IsTemplate)
             .ToListAsync();
 
     public async Task<IEnumerable<Build>> GetTemplatesByCategoryAsync(BuildCategory category) =>
-        await _db.Builds
-            .Include(b => b.Components).ThenInclude(c => c.Product)
+        await WithComponents()
             .Where(b => b.IsTemplate && b.Category == category)
             .ToListAsync();
 
     public async Task<Build?> GetByIdWithComponentsAsync(int id) =>
-        await _db.Builds
-            .Include(b => b.Components).ThenInclude(c => c.Product)
+        await WithComponents()
             .FirstOrDefaultAsync(b => b.Id == id);
 
     public async Task<Build?> GetBySessionIdAsync(string sessionId) =>
-        await _db.Builds
-            .Include(b => b.Components).ThenInclude(c => c.Product)
+        await WithComponents()
             .FirstOrDefaultAsync(b => b.SessionId == sessionId);
 
     public async Task<Build> CreateAsync(Build build)
@@ -121,8 +134,27 @@ public class OrderRepository : IOrderRepository
     }
 
     public async Task<Order?> GetByIdAsync(int id) =>
-        await _db.Orders.Include(o => o.Items).ThenInclude(i => i.Product).FirstOrDefaultAsync(o => o.Id == id);
+        await _db.Orders
+            .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Brand)
+            .FirstOrDefaultAsync(o => o.Id == id);
 
     public async Task<Order?> GetByOrderNumberAsync(string orderNumber) =>
-        await _db.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.OrderNumber == orderNumber);
+        await _db.Orders
+            .Include(o => o.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Brand)
+            .FirstOrDefaultAsync(o => o.OrderNumber == orderNumber);
+
+    // Usado pela página "Meus pedidos": busca os pedidos registrados na sessão.
+    // Inclui os itens apenas para contar quantos são (não carrega Product).
+    public async Task<IEnumerable<Order>> GetByOrderNumbersAsync(IEnumerable<string> orderNumbers)
+    {
+        var numbers = orderNumbers.ToList();
+        if (numbers.Count == 0) return [];
+
+        var orders = await _db.Orders
+            .Include(o => o.Items)
+            .Where(o => numbers.Contains(o.OrderNumber))
+            .ToListAsync();
+
+        return orders.OrderByDescending(o => o.CreatedAt);
+    }
 }

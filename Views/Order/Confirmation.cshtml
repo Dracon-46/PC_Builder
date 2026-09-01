@@ -24,6 +24,7 @@
         <div class="confirm-order-num">
             <span class="order-num-label">Número do pedido</span>
             <span class="order-num-val">@Model.OrderNumber</span>
+            <span class="order-num-hint">Guarde este número — com ele você volta a este pedido a qualquer momento.</span>
         </div>
 
         <div class="confirm-card">
@@ -80,8 +81,9 @@
         }
 
         <div class="confirm-actions">
-            <a href="/" class="btn btn-primary">Voltar ao início</a>
+            <a href="/Order/MyOrders" class="btn btn-primary">Meus pedidos</a>
             <a href="/Catalog" class="btn btn-ghost">Ver mais builds</a>
+            <a href="/" class="btn btn-ghost">Voltar ao início</a>
         </div>
     </div>
 </div>

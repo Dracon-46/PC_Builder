@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace PCBuilder.Models;
 
 public enum ComponentType
@@ -18,22 +20,78 @@ public enum BuildCategory
     Workstation
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// NORMALIZAÇÃO — 3ª FORMA NORMAL
+//
+// Antes, Product guardava Brand / Socket / ChipsetCompatibility como texto solto,
+// repetindo o mesmo valor em dezenas de linhas ("AMD", "AM4", "LGA1700"...).
+// Isso viola a 3FN: são atributos que dependem de uma entidade própria, não da
+// chave do produto — e abrem espaço para duplicata e erro de digitação.
+//
+// Agora cada um é uma tabela com chave própria e nome UNIQUE:
+//   Brand    → marca do fabricante  (AMD, Intel, Corsair, ...)
+//   Socket   → soquete físico       (AM4, AM5, LGA1700)
+//   Chipset  → chipset da placa-mãe (B550, X570, Z690, ...) e pertence a 1 Socket
+//
+// O soquete da placa-mãe NÃO é mais gravado no produto: ele é determinado pelo
+// chipset (Product → Chipset → Socket), eliminando a dependência transitiva.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+public class Brand
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public ICollection<Product> Products { get; set; } = new List<Product>();
+}
+
+public class Socket
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;   // AM4, AM5, LGA1700
+    public ICollection<Chipset> Chipsets { get; set; } = new List<Chipset>();
+    public ICollection<Product> Products { get; set; } = new List<Product>();  // CPUs
+}
+
+public class Chipset
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;   // B550, X570, X670E, Z690, Z790
+    public int SocketId { get; set; }
+    public Socket Socket { get; set; } = null!;
+    public ICollection<Product> Products { get; set; } = new List<Product>();  // placas-mãe
+}
+
 public class Product
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string Brand { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public ComponentType Type { get; set; }
     public int PowerConsumption { get; set; }
-    public string? Socket { get; set; }          // CPU/Motherboard
-    public string? ChipsetCompatibility { get; set; } // Motherboard supports these CPU generations
     public int? TDP { get; set; }                // CPU cooling TDP
     public int? WattageCapacity { get; set; }    // PSU wattage
     public string? ImageUrl { get; set; }
     public bool IsAvailable { get; set; } = true;
+
+    // ── Relacionamentos normalizados ─────────────────────────────────────────
+    public int BrandId { get; set; }
+    public Brand Brand { get; set; } = null!;
+
+    public int? SocketId { get; set; }           // preenchido para CPU
+    public Socket? Socket { get; set; }
+
+    public int? ChipsetId { get; set; }          // preenchido para placa-mãe
+    public Chipset? Chipset { get; set; }
+
     public ICollection<BuildComponent> BuildComponents { get; set; } = new List<BuildComponent>();
+
+    /// <summary>
+    /// Soquete efetivo do produto: direto (CPU) ou herdado do chipset (placa-mãe).
+    /// Não é coluna no banco — é derivado, para não duplicar o dado.
+    /// </summary>
+    [NotMapped]
+    public Socket? EffectiveSocket => Socket ?? Chipset?.Socket;
 }
 
 public class Build
