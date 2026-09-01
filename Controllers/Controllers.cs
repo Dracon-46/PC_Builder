@@ -256,4 +256,22 @@ public class OrderController : Controller
         if (vm == null) return NotFound();
         return View(vm);
     }
+
+    // Avança o status do pedido para o próximo estado (State pattern).
+    // Simula o painel operacional (confirmar pagamento → preparar → enviar → entregar).
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AdvanceStatus(string orderNumber)
+    {
+        await _facade.AdvanceOrderStatusAsync(orderNumber);
+        return RedirectToAction("Confirmation", new { orderNumber });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CancelOrder(string orderNumber)
+    {
+        await _facade.CancelOrderAsync(orderNumber);
+        return RedirectToAction("Confirmation", new { orderNumber });
+    }
 }

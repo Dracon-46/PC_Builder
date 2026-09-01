@@ -56,6 +56,8 @@ public interface IPCBuilderFacade
     Task<OrderSummaryViewModel> GetOrderSummaryAsync(int? buildId, string? sessionId);
     Task<Order> PlaceOrderAsync(PlaceOrderRequest request);
     Task<OrderConfirmationViewModel?> GetOrderConfirmationAsync(string orderNumber);
+    Task<Order?> AdvanceOrderStatusAsync(string orderNumber);
+    Task<Order?> CancelOrderAsync(string orderNumber);
 
     // ── Componentes enriquecidos (Adapter) ────────────────────────────────────
     Task<IEnumerable<EnrichedProductViewModel>> GetEnrichedProductsAsync(ComponentType type);
@@ -336,6 +338,12 @@ public sealed class PCBuilderFacade : IPCBuilderFacade
 
     public Task<OrderConfirmationViewModel?> GetOrderConfirmationAsync(string orderNumber) =>
         _orderService.GetConfirmationAsync(orderNumber);
+
+    public Task<Order?> AdvanceOrderStatusAsync(string orderNumber) =>
+        _orderService.AdvanceOrderStatusAsync(orderNumber);
+
+    public Task<Order?> CancelOrderAsync(string orderNumber) =>
+        _orderService.CancelOrderAsync(orderNumber);
 
     // ── Componentes enriquecidos ───────────────────────────────────────────────
 

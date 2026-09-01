@@ -258,6 +258,8 @@ public interface IOrderService
     Task<Order> PlaceOrderAsync(Build build, string customerName, string customerEmail,
         string customerPhone, string shippingAddress);
     Task<OrderConfirmationViewModel?> GetConfirmationAsync(string orderNumber);
+    Task<Order?> AdvanceOrderStatusAsync(string orderNumber);
+    Task<Order?> CancelOrderAsync(string orderNumber);
 }
 
 public class OrderService : IOrderService
@@ -282,7 +284,7 @@ public class OrderService : IOrderService
             CustomerPhone  = customerPhone,
             ShippingAddress = shippingAddress,
             TotalAmount    = build.TotalPrice,
-            Status         = "Confirmed",
+            Status         = PCBuilder.Patterns.State.OrderStateFactory.Initial.Key, // Pending
             Items          = build.Components.Select(bc => new OrderItem
             {
                 ProductId   = bc.ProductId,
@@ -291,7 +293,11 @@ public class OrderService : IOrderService
                 Quantity    = bc.Quantity
             }).ToList()
         };
-        
+
+        // Nesta loja o checkout já cobre o pagamento, então o pedido avança
+        // automaticamente de Pending → Confirmed (State pattern).
+        new PCBuilder.Patterns.State.OrderStateContext(order).Advance();
+
         var createdOrder = await _orderRepo.CreateAsync(order);
         
         var evt = new PCBuilder.Patterns.Observer.OrderPlacedEvent
@@ -312,6 +318,9 @@ public class OrderService : IOrderService
     {
         var order = await _orderRepo.GetByOrderNumberAsync(orderNumber);
         if (order == null) return null;
+
+        var state = PCBuilder.Patterns.State.OrderStateFactory.FromKey(order.Status);
+
         return new OrderConfirmationViewModel
         {
             OrderNumber   = order.OrderNumber,
@@ -326,7 +335,32 @@ public class OrderService : IOrderService
                 Quantity    = i.Quantity,
                 TotalPrice  = i.TotalPrice,
                 Type        = i.Product?.Type ?? ComponentType.CPU
-            }).ToList()
+            }).ToList(),
+            Status           = state.Key,
+            StatusLabel      = state.Label,
+            StatusBadgeClass = state.BadgeCssClass,
+            NextActionLabel  = state.NextActionLabel,
+            CanCancel        = state.CanCancel
         };
+    }
+
+    // ── Transições de status (State pattern) ─────────────────────────────────
+
+    public async Task<Order?> AdvanceOrderStatusAsync(string orderNumber)
+    {
+        var order = await _orderRepo.GetByOrderNumberAsync(orderNumber);
+        if (order == null) return null;
+
+        new PCBuilder.Patterns.State.OrderStateContext(order).Advance();
+        return await _orderRepo.UpdateAsync(order);
+    }
+
+    public async Task<Order?> CancelOrderAsync(string orderNumber)
+    {
+        var order = await _orderRepo.GetByOrderNumberAsync(orderNumber);
+        if (order == null) return null;
+
+        new PCBuilder.Patterns.State.OrderStateContext(order).Cancel();
+        return await _orderRepo.UpdateAsync(order);
     }
 }

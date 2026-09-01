@@ -40,6 +40,10 @@ builder.Services.AddScoped<IOrderPublisher, OrderPublisher>();
 // ── DECORATOR PATTERN ─────────────────────────────────────────────────────────
 builder.Services.AddScoped<IDiscountService, DiscountService>();
 
+// ── STATE PATTERN ─────────────────────────────────────────────────────────────
+// Sem registro DI: os estados do pedido (Patterns/State/OrderState.cs) são
+// objetos leves criados sob demanda pelo OrderService a partir de Order.Status.
+
 // ── Core Services ─────────────────────────────────────────────────────────────
 builder.Services.AddScoped<ICompatibilityService, CompatibilityService>();
 builder.Services.AddScoped<IPricingService,        PricingService>();

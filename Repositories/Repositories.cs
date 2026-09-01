@@ -25,6 +25,7 @@ public interface IBuildRepository
 public interface IOrderRepository
 {
     Task<Order> CreateAsync(Order order);
+    Task<Order> UpdateAsync(Order order);
     Task<Order?> GetByIdAsync(int id);
     Task<Order?> GetByOrderNumberAsync(string orderNumber);
 }
@@ -108,6 +109,13 @@ public class OrderRepository : IOrderRepository
     public async Task<Order> CreateAsync(Order order)
     {
         _db.Orders.Add(order);
+        await _db.SaveChangesAsync();
+        return order;
+    }
+
+    public async Task<Order> UpdateAsync(Order order)
+    {
+        _db.Orders.Update(order);
         await _db.SaveChangesAsync();
         return order;
     }

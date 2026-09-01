@@ -53,9 +53,31 @@
             </div>
             <div class="meta-item">
                 <span class="meta-key">Status</span>
-                <span class="meta-val status-badge">Confirmado ✓</span>
+                <span class="meta-val order-status-badge @Model.StatusBadgeClass">@Model.StatusLabel</span>
             </div>
         </div>
+
+        @if (Model.NextActionLabel != null || Model.CanCancel)
+        {
+            <div class="confirm-status-actions">
+                @if (Model.NextActionLabel != null)
+                {
+                    <form method="post" asp-action="AdvanceStatus" asp-controller="Order">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="orderNumber" value="@Model.OrderNumber" />
+                        <button type="submit" class="btn btn-primary btn-sm">@Model.NextActionLabel</button>
+                    </form>
+                }
+                @if (Model.CanCancel)
+                {
+                    <form method="post" asp-action="CancelOrder" asp-controller="Order">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="orderNumber" value="@Model.OrderNumber" />
+                        <button type="submit" class="btn btn-ghost btn-sm">Cancelar pedido</button>
+                    </form>
+                }
+            </div>
+        }
 
         <div class="confirm-actions">
             <a href="/" class="btn btn-primary">Voltar ao início</a>

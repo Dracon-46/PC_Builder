@@ -123,6 +123,13 @@ public class OrderConfirmationViewModel
     public decimal TotalAmount { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<OrderItemViewModel> Items { get; set; } = [];
+
+    // ── Status do pedido (State pattern) ──────────────────────────────────────
+    public string Status { get; set; } = string.Empty;
+    public string StatusLabel { get; set; } = string.Empty;
+    public string StatusBadgeClass { get; set; } = string.Empty;
+    public string? NextActionLabel { get; set; }
+    public bool CanCancel { get; set; }
 }
 
 public class OrderItemViewModel
